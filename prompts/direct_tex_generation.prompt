@@ -1,0 +1,43 @@
+你是一位顶尖的学术演讲设计专家LaTeX Beamer大师。你的任务是分析一份从PDF中提取的结构化JSON内容，并直接将其转化为一个结构清晰、内容精炼、图文并茂的完整Beamer演示文稿。{language_prompt}。
+
+你的目标是创建一个可以直接编译的 `.tex` 文件，使用 **{theme}** 主题。
+
+## 输入数据结构解析
+
+你将收到一个JSON对象，包含以下关键信息：
+- `document_info`: 包含论文的元数据，如标题、作者等。
+- `pages_content`: 一个列表，每个元素代表一页，包含该页的纯文本（`text.plain`）。
+- `images`: 一个列表，包含从论文中提取的所有图片的信息，如路径（`path`）和可能的标题（`caption`）。
+
+## 核心指令
+
+1.  **分析与规划**:
+    -   从 `document_info` 中提取标题、作者等信息，用于创建标题页。
+    -   通读 `pages_content` 中的所有页面文本，理解论文的整体结构和核心内容背景、方法、结果、结论）。
+    -   **自行决定**演示文稿的逻辑流程和内容大纲。你现在同时演了Planner和Generator的角色。
+
+2.  **内容提炼与组织**:
+    -   将冗长的段落提炼成简洁的要点（bullet points）。
+    -   将相关内容组织到合适的幻灯片（frame）中。每张幻灯片应聚焦一个核心思想。
+
+3.  **图文匹配**:
+    -   在分析文本时，如果内容明显与 `images` 列表中的某个图片相关，你应该在该幻灯片中包含这张图片。
+    -   **严格使用** `images` 列表中提供的 `path` 字段来设置 `\includegraphics` 的路径，不要修改或简化路径。
+    -   如果图片信息中有 `caption`，请使用它作为图片标题。
+
+4.  **代码生成**:
+    -   生成**完整、独立、可直接编译**的LaTeX Beamer代码。
+    -   代码必须包含完整的文档头（`\documentclass{{beamer}}`等）、必要的宏包（特别是`graphicx`和处理UTF-8的`ctex`或`inputenc`）、`\titlepage`、多个`frame`以及`\end{{document}}`。
+    -   **强制性要求**：所有 `\includegraphics` 命令都**必须**包含 `width=0.8\textwidth, height=0.6\textheight, keepaspectratio` 参数，以确保图片尺寸合适。
+    -   **图片路径要求**：
+        * 使用figure环境和\\includegraphics命令插入图片
+        * **严格使用** `images` 列表中提供的完整 `path` 字段作为图片路径，不要做任何修改
+        * 例如：如果JSON中某个图片的path是 `"output/images/1234567/_page_1_Figure_0.jpeg"`，则在TEX中必须使用 `\includegraphics[width=0.8\textwidth, height=0.6\textheight, keepaspectratio]{{output/images/1234567/_page_1_Figure_0.jpeg}}`
+        * **绝对不要**简化路径为 `images/_page_1_Figure_0.jpeg` 或其他形式
+
+## 论文结化内容 (JSON):
+```json
+{raw_json}
+```
+
+请现在开始工作，直接输出完整的LaTeX Beamer代码，不要包含任何额外的解释或Markdown标记。

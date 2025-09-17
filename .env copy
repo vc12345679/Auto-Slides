@@ -1,0 +1,20 @@
+# OpenAI API Configuration (Required)
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Optional: Custom OpenAI API base URL (if using proxy)
+# OPENAI_API_BASE=https://api.openai.com/v1
+
+# Optional: Proxy settings (uncomment if needed)
+# http_proxy=
+# https_proxy=
+# no_proxy=*
+
+# Optional: Default settings
+# LANGUAGE=en
+# MODEL_NAME=gpt-4o
+
+# Optional: LangSmith for monitoring (uncomment if needed)
+# LANGCHAIN_TRACING_V2="true"
+# LANGCHAIN_ENDPOINT="https://api.smith.langchain.com"
+# LANGCHAIN_API_KEY="your_langsmith_api_key_here"
+# LANGCHAIN_PROJECT="auto-slides"
