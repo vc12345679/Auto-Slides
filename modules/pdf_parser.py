@@ -96,12 +96,12 @@ def _extract_tables_and_equations(llm, full_text: str) -> Optional[Dict]:
     logger = logging.getLogger(__name__)
     
     try:
-        # 导入特殊字符处理模块
+        # Import special character handling module
         from modules.special_char_handler import preprocess_content_for_llm, postprocess_content_from_llm, validate_special_chars_in_output
         
-        # 预处理文本以保护特殊字符
+        # Preprocess text to protect special characters
         protected_text = preprocess_content_for_llm(full_text)
-        logger.debug("已对特殊字符进行预处理保护")
+        logger.debug("Special characters have been preprocessed and protected")
         
         prompt = ChatPromptTemplate.from_template(EXTRACT_TABLES_AND_EQUATIONS_PROMPT)
         chain = prompt | llm
@@ -109,7 +109,7 @@ def _extract_tables_and_equations(llm, full_text: str) -> Optional[Dict]:
         
         response_text = response.content if hasattr(response, 'content') else str(response)
         
-        # 恢复特殊字符
+        # Restore special characters
         response_text = postprocess_content_from_llm(response_text)
         
         # Extract JSON part
@@ -122,13 +122,13 @@ def _extract_tables_and_equations(llm, full_text: str) -> Optional[Dict]:
         # Parse JSON
         result = json.loads(json_str)
         
-        # 验证特殊字符是否丢失
+        # Validate if special characters are lost
         if result.get('tables'):
             for table in result['tables']:
                 markdown_content = table.get('markdown_content', '')
                 lost_chars = validate_special_chars_in_output(full_text, markdown_content)
                 if lost_chars:
-                    logger.warning(f"表格 {table.get('id', 'unknown')} 中丢失特殊字符: {lost_chars}")
+                    logger.warning(f"Table {table.get('id', 'unknown')} lost special characters: {lost_chars}")
         
         logger.info(f"Successfully extracted {len(result.get('tables', []))} tables and {len(result.get('equations', []))} equations")
         return result

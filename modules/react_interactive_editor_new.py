@@ -60,46 +60,46 @@ class ReactInteractiveEditor:
         self.reference_agent = None
         if workflow_state and workflow_state.is_ready_for_reference_search():
             try:
-                # 修正导入路径 - 使用modules.reference_agent路径
+                # Fix import path - use modules.reference_agent path
                 from modules.reference_agent.reference_agent import ReferenceAgent
                 self.reference_agent = ReferenceAgent()
-                print("   ✅ 引用检索Agent已初始化")
+                print("   ✅ Reference search agent initialized")
             except ImportError as e:
                 try:
-                    # 备用导入路径
+                    # Backup import path
                     import sys
                     import os
                     sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
                     from modules.reference_agent.reference_agent import ReferenceAgent
                     self.reference_agent = ReferenceAgent()
-                    print("   ✅ 引用检索Agent已初始化（备用路径）")
+                    print("   ✅ Reference search agent initialized (backup path)")
                 except Exception as e2:
-                    print(f"   ⚠️ 引用检索Agent初始化失败: {e2}")
+                    print(f"   ⚠️ Reference search agent initialization failed: {e2}")
                     self.reference_agent = None
             except Exception as e:
-                print(f"   ⚠️ 引用检索Agent初始化失败: {e}")
+                print(f"   ⚠️ Reference search agent initialization failed: {e}")
                 self.reference_agent = None
         
-        # 读取文档内容
+        # Read document content
         with open(tex_file_path, 'r', encoding='utf-8') as f:
             self.document_content = f.read()
         
-        # 生成文档结构地图
-        print("   正在生成文档结构地图...")
+        # Generate document structure map
+        print("   Generating document structure map...")
         self.document_map = self._build_document_map()
         
-        print(f"✓ 已加载并预处理文档: {self.tex_file_path}")
-        print(f"  文档大小: {len(self.document_content)} 字符")
+        print(f"✓ Document loaded and preprocessed: {self.tex_file_path}")
+        print(f"  Document size: {len(self.document_content)} characters")
         if source_content:
-            print(f"  已提供原始PDF内容，支持内容扩展功能")
+            print(f"  Original PDF content provided, content expansion feature enabled")
         print()
     
     def _build_document_map(self):
         """
-        构建文档的结构化地图，帮助LLM理解文档结构
+        Build structured map of document to help LLM understand document structure
         
         Returns:
-            dict: 包含slides列表的文档地图，或None（如果生成失败）
+            dict: Document map containing slides list, or None if generation fails
         """
         try:
             system_prompt = DOCUMENT_STRUCTURE_ANALYSIS_PROMPT
@@ -109,28 +109,28 @@ class ReactInteractiveEditor:
             result_json = self._call_llm([{"role": "user", "content": prompt}], system_prompt, json_mode=True)
             
             if result_json and "slides" in result_json:
-                print(f"   ✓ 已生成文档地图：{result_json['total_slides']} 页幻灯片")
+                print(f"   ✓ Document map generated: {result_json['total_slides']} slides")
                 return result_json
             else:
-                print("   ⚠️ 文档地图生成失败，将使用备用定位方式")
+                print("   ⚠️ Document map generation failed, will use backup positioning method")
                 return None
                 
         except Exception as e:
-            print(f"   ❌ 文档地图生成出错: {e}")
+            print(f"   ❌ Document map generation error: {e}")
             return None
     
     def _call_llm(self, messages, system_prompt, temperature=0.1, json_mode=False):
         """
-        通用LLM调用函数
+        General LLM calling function
         
         Args:
-            messages: 消息列表
-            system_prompt: 系统提示词
-            temperature: 温度参数
-            json_mode: 是否使用JSON模式
+            messages: Message list
+            system_prompt: System prompt
+            temperature: Temperature parameter
+            json_mode: Whether to use JSON mode
             
         Returns:
-            dict|str: LLM返回结果
+            dict|str: LLM response result
         """
         try:
             full_messages = [{"role": "system", "content": system_prompt}] + messages
@@ -145,27 +145,27 @@ class ReactInteractiveEditor:
             content = response.choices[0].message.content
             return json.loads(content) if json_mode else content
         except Exception as e:
-            print(f"❌ LLM 调用失败: {e}")
+            print(f"❌ LLM call failed: {e}")
             return None
     
     def locate_code_snippet(self, description):
         """
-        智能定位代码片段，支持多目标定位
+        Intelligently locate code snippets, supports multi-target positioning
         
         Args:
-            description: 用户描述
+            description: User description
             
         Returns:
             dict: {
                 "snippets": [{"slide_number": int, "code": str, "description": str}],
-                "analysis": "分析结果"
+                "analysis": "Analysis result"
             }
         """
-        print(f"ReAct Agent [定位中]... {description}")
+        print(f"ReAct Agent [Locating]... {description}")
         
         system_prompt = CODE_LOCATION_PROMPT
         
-        # 构建包含文档地图的完整上下文
+        # Build complete context including document map
         context_parts = []
         
         if self.document_map:
@@ -194,34 +194,34 @@ class ReactInteractiveEditor:
             snippets = result_json.get("snippets", [])
             analysis = result_json.get("analysis", "")
             
-            print(f"   ✓ 找到 {len(snippets)} 个代码片段")
+            print(f"   ✓ Found {len(snippets)} code snippets")
             if analysis:
-                print(f"   📋 分析: {analysis}")
+                print(f"   📋 Analysis: {analysis}")
             
             for i, snippet_info in enumerate(snippets, 1):
-                slide_num = snippet_info.get("slide_number", "未知")
+                slide_num = snippet_info.get("slide_number", "Unknown")
                 desc = snippet_info.get("description", "")
                 code = snippet_info.get("code", "")
-                print(f"   {i}. 第{slide_num}页: {desc} ({len(code)} 字符)")
+                print(f"   {i}. Page {slide_num}: {desc} ({len(code)} characters)")
             
             return result_json
         else:
-            print("   ❌ 未能定位到相关代码")
-            return {"snippets": [], "analysis": "未找到匹配的代码片段"}
+            print("   ❌ Failed to locate relevant code")
+            return {"snippets": [], "analysis": "No matching code snippets found"}
     
     def generate_modified_code(self, original_snippet, instruction, full_document_context):
         """
-        根据指令生成修改后的代码
+        Generate modified code according to instructions
         
         Args:
-            original_snippet: 原始代码片段
-            instruction: 修改指令
-            full_document_context: 完整文档上下文
+            original_snippet: Original code snippet
+            instruction: Modification instruction
+            full_document_context: Complete document context
             
         Returns:
-            str: 修改后的代码，或None（如果失败）
+            str: Modified code, or None if failed
         """
-        print(f"ReAct Agent [修改中]... {instruction}")
+        print(f"ReAct Agent [Modifying]... {instruction}")
         
         system_prompt = CODE_MODIFICATION_PROMPT
         
@@ -238,31 +238,31 @@ class ReactInteractiveEditor:
         result_json = self._call_llm([{"role": "user", "content": prompt}], system_prompt, json_mode=True)
         
         if not result_json:
-            print("❌ LLM未能生成有效的响应")
+            print("❌ LLM failed to generate valid response")
             return None
             
         modified_code = result_json.get("modified_code")
         
-        # 确保返回的是字符串类型
+        # Ensure return type is string
         if isinstance(modified_code, list):
-            print("⚠️ 检测到LLM返回了列表，尝试转换为字符串")
+            print("⚠️ Detected LLM returned list, attempting to convert to string")
             modified_code = '\n'.join(str(item) for item in modified_code)
         elif not isinstance(modified_code, str):
-            print(f"❌ LLM返回了无效的类型: {type(modified_code)}")
+            print(f"❌ LLM returned invalid type: {type(modified_code)}")
             return None
             
-        # 添加安全检查：防止LLM返回整个文档
+        # Add safety check: prevent LLM from returning entire document
         original_length = len(original_snippet)
         modified_length = len(modified_code)
         
-        # 如果修改后的代码长度超过原始代码的3倍，可能是异常情况
+        # If modified code length exceeds 3x original code, may be abnormal
         if modified_length > original_length * 3:
-            print(f"⚠️ 警告：修改后的代码长度异常 ({modified_length} vs {original_length})")
-            print("这可能表明LLM返回了过多的代码。")
+            print(f"⚠️ Warning: Modified code length abnormal ({modified_length} vs {original_length})")
+            print("This may indicate LLM returned excessive code.")
             
-            # 检查是否包含文档开头的标识符
+            # Check if contains document header identifiers
             if "\\documentclass" in modified_code and "\\begin{document}" in modified_code:
-                print("❌ 检测到LLM错误返回了完整文档，拒绝此次修改")
+                print("❌ Detected LLM incorrectly returned complete document, rejecting this modification")
                 return None
         
         return modified_code

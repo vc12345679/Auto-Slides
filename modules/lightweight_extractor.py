@@ -1,6 +1,6 @@
 """
-轻量级内容提取模块：使用marker-pdf直接提取markdown文本和图片
-大幅减少文件大小，同时保持内容质量
+Lightweight content extraction module: Use marker-pdf to directly extract markdown text and images
+Significantly reduce file size while maintaining content quality
 """
 import os
 import json
@@ -16,33 +16,33 @@ from surya.settings import settings
 class LightweightExtractor:
     def __init__(self, pdf_path, output_dir="output"):
         """
-        初始化轻量级内容提取器
+        Initialize lightweight content extractor
         
         Args:
-            pdf_path: PDF文件路径
-            output_dir: 输出目录
+            pdf_path: PDF file path
+            output_dir: Output directory
         """
         self.pdf_path = pdf_path
         self.output_dir = output_dir
         
-        # 使用时间戳创建唯一的会话ID
+        # Use timestamp to create unique session ID
         self.session_id = f"{int(time.time())}"
         
-        # 创建会话特定的图片目录
+        # Create session-specific image directory
         self.img_dir = os.path.join("output", "images", self.session_id)
         
-        # 确保输出目录存在
+        # Ensure output directory exists
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.img_dir, exist_ok=True)
         
-        # 设置日志
+        # Setup logging
         self.logger = logging.getLogger(__name__)
         
-        # 设置marker模型路径
+        # Setup marker model paths
         self._setup_marker_models()
     
     def _setup_marker_models(self):
-        """设置marker模型路径"""
+        """Setup marker model paths"""
         model_root = "models"
         settings.MODEL_CACHE_DIR = model_root
         for checkpoint in [
@@ -65,17 +65,17 @@ class LightweightExtractor:
             dict: 包含markdown文本和图片信息的简化字典
         """
         try:
-            self.logger.info(f"开始使用marker-pdf提取内容: {self.pdf_path}")
+            self.logger.info(f"Starting marker-pdf content extraction: {self.pdf_path}")
             
-            # 创建转换器
+            # Create converter
             converter = PdfConverter(artifact_dict=create_model_dict())
             
-            # 转换PDF
+            # Convert PDF
             start_time = time.time()
             rendered = converter(self.pdf_path)
             conversion_time = time.time() - start_time
             
-            self.logger.info(f"PDF转换完成，耗时: {conversion_time:.2f}秒")
+            self.logger.info(f"PDF conversion completed, time taken: {conversion_time:.2f} seconds")
             
             # 提取文本和图片
             markdown_text, _, images = text_from_rendered(rendered)
@@ -107,14 +107,14 @@ class LightweightExtractor:
                 "session_id": self.session_id
             }
             
-            self.logger.info(f"内容提取完成:")
-            self.logger.info(f"  - 文本长度: {len(markdown_text)}字符")
-            self.logger.info(f"  - 图片数量: {len(image_list)}")
+            self.logger.info(f"Content extraction completed:")
+            self.logger.info(f"  - Text length: {len(markdown_text)} characters")
+            self.logger.info(f"  - Number of images: {len(image_list)}")
             
             return content
             
         except Exception as e:
-            self.logger.error(f"提取内容失败: {str(e)}")
+            self.logger.error(f"Content extraction failed: {str(e)}")
             import traceback
             traceback.print_exc()
             return None
@@ -200,10 +200,10 @@ class LightweightExtractor:
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(content, f, ensure_ascii=False, indent=2)
         
-        # 记录文件大小
+        # Record file size
         file_size = os.path.getsize(output_file)
-        self.logger.info(f"轻量级内容已保存到: {output_file}")
-        self.logger.info(f"文件大小: {file_size / 1024 / 1024:.2f}MB")
+        self.logger.info(f"Lightweight content saved to: {output_file}")
+        self.logger.info(f"File size: {file_size / 1024 / 1024:.2f}MB")
         
         return output_file
     
@@ -212,10 +212,10 @@ class LightweightExtractor:
         if hasattr(self, 'img_dir') and os.path.exists(self.img_dir):
             try:
                 import shutil
-                self.logger.info(f"清理临时图片目录: {self.img_dir}")
+                self.logger.info(f"Cleaning up temporary image directory: {self.img_dir}")
                 shutil.rmtree(self.img_dir)
             except Exception as e:
-                self.logger.warning(f"清理临时文件时出错: {str(e)}")
+                self.logger.warning(f"Error cleaning up temporary files: {str(e)}")
 
 # 便捷函数
 def extract_lightweight_content(pdf_path, output_dir="output", cleanup_temp=False):

@@ -70,14 +70,14 @@ class TexWorkflow:
         # Create logger
         self.logger = logging.getLogger(__name__)
         
-        # 确保输出目录存在
+        # Ensure output directory exists
         os.makedirs(output_dir, exist_ok=True)
         
-        # 初始化模型
+        # Initialize model
         self._init_model()
     
     def _init_model(self):
-        """初始化语言模型"""
+        """Initialize language model"""
         self.tex_generator = TexGenerator(
             presentation_plan_path=self.presentation_plan_path,
             output_dir=self.output_dir,
@@ -87,7 +87,7 @@ class TexWorkflow:
             language=self.language,
             theme=self.theme
         )
-        # 获取 session_id
+        # Get session_id
         session_id = os.path.basename(self.output_dir)
         self.tex_validator = TexValidator(
             output_dir=self.output_dir,
@@ -97,119 +97,119 @@ class TexWorkflow:
     
     def process(self, skip_compilation: bool = False) -> Tuple[bool, str, Optional[str]]:
         """
-        执行TEX工作流
+        Execute TEX workflow
         
         Returns:
-            Tuple[bool, str, Optional[str]]: (是否成功, 信息, 生成的PDF路径)
+            Tuple[bool, str, Optional[str]]: (Success status, Message, Generated PDF path)
         """
         try:
-            # 步骤1：加载演示计划
-            self.logger.info("加载演示计划...")
+            # Step 1: Load presentation plan
+            self.logger.info("Loading presentation plan...")
             presentation_plan = self._load_presentation_plan()
             if not presentation_plan:
-                return False, "无法加载演示计划", None
+                return False, "Unable to load presentation plan", None
                 
-            # 步骤2: 预处理图片（如有必要）
+            # Step 2: Preprocess images (if necessary)
             self._preprocess_images(presentation_plan)
             
-            # 步骤3：生成初始TEX代码
-            self.logger.info("生成初始TEX代码...")
+            # Step 3: Generate initial TEX code
+            self.logger.info("Generating initial TEX code...")
             tex_code = self.tex_generator.generate_tex()
             if not tex_code:
-                return False, "TEX代码生成失败", None
+                return False, "TEX code generation failed", None
                 
-            # 保存TEX代码
+            # Save TEX code
             output_tex = os.path.join(self.output_dir, "output.tex")
             with open(output_tex, 'w', encoding='utf-8') as f:
                 f.write(tex_code)
-            self.logger.info(f"TEX代码已保存至: {output_tex}")
+            self.logger.info(f"TEX code saved to: {output_tex}")
             
-            # 步骤4：保存TEX文件并可选编译
-            self.logger.info(f"TEX代码已保存至: {output_tex}")
+            # Step 4: Save TEX file and optionally compile
+            self.logger.info(f"TEX code saved to: {output_tex}")
             
-            # 如果跳过编译，则只返回TEX文件路径
+            # If skip compilation, only return TEX file path
             if skip_compilation:
-                self.logger.info("跳过PDF编译，仅生成TEX文件")
-                return True, "TEX生成成功（已跳过编译）", output_tex
+                self.logger.info("Skipping PDF compilation, only generating TEX file")
+                return True, "TEX generation successful (compilation skipped)", output_tex
             
-            # 步骤5：验证和编译TEX代码
+            # Step 5: Validate and compile TEX code
             success = False
             pdf_path = None
             error_message = ""
             
             for attempt in range(1, self.max_retries + 1):
-                self.logger.info(f"开始第 {attempt}/{self.max_retries} 次验证...")
+                self.logger.info(f"Starting validation attempt {attempt}/{self.max_retries}...")
                 
-                # 验证并编译
+                # Validate and compile
                 validate_success, validate_message, output_pdf = self.tex_validator.validate(output_tex)
                 
                 if validate_success:
                     success = True
                     pdf_path = output_pdf
-                    self.logger.info(f"TEX代码验证成功: {validate_message}")
+                    self.logger.info(f"TEX code validation successful: {validate_message}")
                     break
                 else:
-                    self.logger.warning(f"TEX代码验证失败: {validate_message}")
+                    self.logger.warning(f"TEX code validation failed: {validate_message}")
                     error_message = validate_message
                     
-                    # 最后一次尝试不需要修复
+                    # Last attempt doesn't need repair
                     if attempt < self.max_retries:
-                        # 尝试修复TEX代码
-                        self.logger.info("尝试修复TEX代码...")
+                        # Try to fix TEX code
+                        self.logger.info("Attempting to fix TEX code...")
                         
-                        # 读取当前TEX代码
+                        # Read current TEX code
                         with open(output_tex, 'r', encoding='utf-8') as f:
                             current_tex_code = f.read()
                         
-                        # 使用验证器的修复方法
+                        # Use validator's fix method
                         fixed_tex_code = self.tex_validator.fix_tex_code(
                             current_tex_code, 
                             error_message,
                             self.tex_generator.llm
                         )
                         
-                        # 保存修复后的代码
+                        # Save fixed code
                         with open(output_tex, 'w', encoding='utf-8') as f:
                             f.write(fixed_tex_code)
                         
-                        self.logger.info(f"已保存修复后的代码: {output_tex}")
+                        self.logger.info(f"Fixed code saved to: {output_tex}")
                         
-                        # 等待1秒再次尝试编译
+                        # Wait 1 second before retrying compilation
                         time.sleep(1)
                         
             if success:
-                return True, "TEX生成和编译成功", pdf_path
+                return True, "TEX generation and compilation successful", pdf_path
             else:
-                return False, f"经过 {self.max_retries} 次尝试，仍然无法修复TEX代码", None
+                return False, f"After {self.max_retries} attempts, still unable to fix TEX code", None
                 
         except Exception as e:
-            self.logger.error(f"TEX工作流执行出错: {str(e)}")
+            self.logger.error(f"TEX workflow execution error: {str(e)}")
             import traceback
             traceback.print_exc()
-            return False, f"TEX工作流执行出错: {str(e)}", None
+            return False, f"TEX workflow execution error: {str(e)}", None
     
     def _load_presentation_plan(self) -> Dict[str, Any]:
-        """加载演示计划"""
+        """Load presentation plan"""
         try:
             with open(self.presentation_plan_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            self.logger.error(f"加载演示计划失败: {str(e)}")
+            self.logger.error(f"Failed to load presentation plan: {str(e)}")
             return {}
     
     def _preprocess_images(self, presentation_plan: Dict[str, Any]):
         """
-        预处理演示计划中的图片引用
+        Preprocess image references in presentation plan
         
         Args:
-            presentation_plan: 演示计划
+            presentation_plan: Presentation plan
         """
         slides = presentation_plan.get("slides_plan", [])
         
-        # 获取session_id
+        # Get session_id
         session_id = os.path.basename(os.path.dirname(self.presentation_plan_path))
         
-        # 为所有幻灯片上的图片引用创建占位图像
+        # Create placeholder images for all image references on slides
         for slide in slides:
             if not slide.get("includes_figure", False):
                 continue
@@ -218,18 +218,18 @@ class TexWorkflow:
             if not fig_ref:
                 continue
                 
-            # 检查图片路径
+            # Check image path
             src = fig_ref.get("path", "")
             if not src:
                 continue
                 
-            # 查找图片文件
+            # Find image file
             found = False
             
-            # 检查images目录
+            # Check images directory
             images_dir = os.path.join("output", "images", session_id)
             if os.path.exists(images_dir) and os.path.isdir(images_dir):
-                # 从路径中提取文件名
+                # Extract filename from path
                 filename = os.path.basename(src)
                 if not filename:
                     continue
@@ -238,33 +238,33 @@ class TexWorkflow:
                 
                 if os.path.exists(src_path) and os.path.isfile(src_path):
                     found = True
-                    # 更新图片路径
+                    # Update image path
                     fig_ref["path"] = f"images/{filename}"
-                    self.logger.info(f"找到图片: {src_path}")
+                    self.logger.info(f"Found image: {src_path}")
             
-            # 如果图片未找到，创建占位图
+            # If image not found, create placeholder
             if not found:
-                self.logger.warning(f"未找到图片: {src}")
+                self.logger.warning(f"Image not found: {src}")
                 
-                # 创建占位图像
+                # Create placeholder image
                 images_dir = os.path.join("output", "images", session_id)
                 os.makedirs(images_dir, exist_ok=True)
                 
-                # 生成占位图文件名
+                # Generate placeholder filename
                 placeholder_name = f"placeholder_{os.path.basename(src)}.png"
                 placeholder_path = os.path.join(images_dir, placeholder_name)
                 
-                # 创建占位图像
+                # Create placeholder image
                 try:
-                    # 创建一个简单的占位图像
+                    # Create a simple placeholder image
                     width, height = 640, 480
                     image = Image.new('RGB', (width, height), color=(200, 240, 240))
                     draw = ImageDraw.Draw(image)
                     
-                    # 绘制边框
+                    # Draw border
                     draw.rectangle([(0, 0), (width-1, height-1)], outline=(100, 150, 150), width=2)
                     
-                    # 添加文本
+                    # Add text
                     try:
                         font = ImageFont.truetype("Arial", 24)
                     except:
@@ -273,17 +273,17 @@ class TexWorkflow:
                         except:
                             font = None
                     
-                    # 添加标题文本
-                    title_text = "找不到图片"
+                    # Add title text
+                    title_text = "Image Not Found"
                     if font:
                         draw.text((width//2 - 80, height//2 - 40), title_text, fill=(50, 100, 100), font=font)
                     else:
                         draw.text((width//2 - 60, height//2 - 40), title_text, fill=(50, 100, 100))
                     
-                    # 添加文件名文本
-                    file_text = f"原始路径: {src}"
+                    # Add filename text
+                    file_text = f"Original path: {src}"
                     if font:
-                        # 使用较小的字体
+                        # Use smaller font
                         try:
                             small_font = ImageFont.truetype("Arial", 16)
                         except:
@@ -292,47 +292,47 @@ class TexWorkflow:
                     else:
                         draw.text((width//2 - 150, height//2 + 20), file_text, fill=(50, 100, 100))
                     
-                    # 保存图像
+                    # Save image
                     image.save(placeholder_path)
-                    self.logger.info(f"已创建占位图像: {placeholder_path}")
+                    self.logger.info(f"Created placeholder image: {placeholder_path}")
                     
-                    # 更新图片路径
+                    # Update image path
                     fig_ref["path"] = f"images/{placeholder_name}"
                 except Exception as e:
-                    self.logger.error(f"创建占位图像失败: {str(e)}")
-                    # 如果创建占位图失败，删除图片引用
+                    self.logger.error(f"Failed to create placeholder image: {str(e)}")
+                    # If creating placeholder fails, remove image reference
                     slide["includes_figure"] = False
                     slide["figure_reference"] = None
         
-        # 保存更新后的演示计划
+        # Save updated presentation plan
         try:
             with open(self.presentation_plan_path, 'w', encoding='utf-8') as f:
                 json.dump(presentation_plan, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            self.logger.warning(f"保存更新后的演示计划失败: {str(e)}")
+            self.logger.warning(f"Failed to save updated presentation plan: {str(e)}")
 
     def _compile_tex(self, tex_path: str) -> bool:
         """
-        编译TEX文件
+        Compile TEX file
         
         Args:
-            tex_path: TEX文件路径
+            tex_path: TEX file path
             
         Returns:
-            bool: 是否成功
+            bool: Success status
         """
         try:
-            # 获取TEX文件所在目录和文件名
+            # Get TEX file directory and filename
             tex_dir = os.path.dirname(tex_path)
             tex_basename = os.path.basename(tex_path)
             
-            # 切换到TEX文件所在目录
+            # Change to TEX file directory
             original_dir = os.getcwd()
             os.chdir(tex_dir)
             
             try:
-                # 运行编译命令
-                self.logger.info(f"运行编译命令: pdflatex -interaction=nonstopmode output.tex")
+                # Run compilation command
+                self.logger.info(f"Running compilation command: pdflatex -interaction=nonstopmode output.tex")
                 result = subprocess.run(
                     ["pdflatex", "-interaction=nonstopmode", "output.tex"],
                     cwd=tex_dir,
@@ -340,20 +340,20 @@ class TexWorkflow:
                     text=True
                 )
                 
-                # 检查编译结果
+                # Check compilation result
                 if result.returncode == 0:
-                    self.logger.info("TEX代码验证成功")
+                    self.logger.info("TEX code validation successful")
                     return True
                 else:
-                    self.logger.warning(f"TEX代码验证失败: {result.stderr}")
+                    self.logger.warning(f"TEX code validation failed: {result.stderr}")
                     return False
                 
             finally:
-                # 恢复原来的目录
+                # Restore original directory
                 os.chdir(original_dir)
                 
         except Exception as e:
-            self.logger.error(f"编译TEX文件时出错: {str(e)}")
+            self.logger.error(f"Error compiling TEX file: {str(e)}")
             return False
 
     def run(self) -> Tuple[bool, str, Optional[str]]:

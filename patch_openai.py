@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-修复 OpenAI 客户端初始化时的 proxies 参数问题
+Fix OpenAI client initialization proxies parameter issue
 """
 import os
 import sys
@@ -9,83 +9,83 @@ import importlib.util
 import inspect
 from types import FunctionType, MethodType
 
-# 设置日志
+# Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def patch_openai_client():
     """
-    修补 OpenAI 客户端，移除 proxies 参数
+    Patch OpenAI client to remove proxies parameter
     """
     try:
-        # 尝试导入 OpenAI 客户端
+        # Try to import OpenAI client
         import openai
         from openai import OpenAI
         
-        # 获取原始的 __init__ 方法
+        # Get original __init__ method
         original_init = OpenAI.__init__
         
-        # 定义新的 __init__ 方法
+        # Define new __init__ method
         def patched_init(self, *args, **kwargs):
-            # 移除 proxies 参数（如果存在）
+            # Remove proxies parameter if it exists
             if 'proxies' in kwargs:
-                logging.info("移除了 'proxies' 参数")
+                logging.info("Removed 'proxies' parameter")
                 del kwargs['proxies']
             
-            # 调用原始的 __init__ 方法
+            # Call original __init__ method
             return original_init(self, *args, **kwargs)
         
-        # 替换 __init__ 方法
+        # Replace __init__ method
         OpenAI.__init__ = patched_init
-        logging.info("成功修补 OpenAI 客户端")
+        logging.info("Successfully patched OpenAI client")
         
         return True
     except Exception as e:
-        logging.error(f"修补 OpenAI 客户端失败: {str(e)}")
+        logging.error(f"Failed to patch OpenAI client: {str(e)}")
         import traceback
         traceback.print_exc()
         return False
 
 def patch_langchain_openai():
     """
-    修补 LangChain OpenAI 集成
+    Patch LangChain OpenAI integration
     """
     try:
-        # 尝试导入 LangChain OpenAI
+        # Try to import LangChain OpenAI
         import langchain_openai
         from langchain_openai.chat_models import ChatOpenAI
         
-        # 获取原始的 __init__ 方法
+        # Get original __init__ method
         original_init = ChatOpenAI.__init__
         
-        # 定义新的 __init__ 方法
+        # Define new __init__ method
         def patched_init(self, *args, **kwargs):
-            # 移除 proxies 参数（如果存在）
+            # Remove proxies parameter if it exists
             if 'proxies' in kwargs:
-                logging.info("从 ChatOpenAI 移除了 'proxies' 参数")
+                logging.info("Removed 'proxies' parameter from ChatOpenAI")
                 del kwargs['proxies']
             
-            # 调用原始的 __init__ 方法
+            # Call original __init__ method
             return original_init(self, *args, **kwargs)
         
-        # 替换 __init__ 方法
+        # Replace __init__ method
         ChatOpenAI.__init__ = patched_init
-        logging.info("成功修补 LangChain ChatOpenAI")
+        logging.info("Successfully patched LangChain ChatOpenAI")
         
         return True
     except Exception as e:
-        logging.error(f"修补 LangChain ChatOpenAI 失败: {str(e)}")
+        logging.error(f"Failed to patch LangChain ChatOpenAI: {str(e)}")
         import traceback
         traceback.print_exc()
         return False
 
-# 当作为脚本运行时，应用补丁
+# Apply patches when run as script
 if __name__ == "__main__":
     success1 = patch_openai_client()
     success2 = patch_langchain_openai()
     
     if success1 and success2:
-        logging.info("所有补丁都已成功应用")
+        logging.info("All patches applied successfully")
     else:
-        logging.warning("一些补丁未能应用")
+        logging.warning("Some patches failed to apply")
     
     sys.exit(0 if (success1 or success2) else 1)

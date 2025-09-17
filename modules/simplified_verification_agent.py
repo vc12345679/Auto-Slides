@@ -213,21 +213,21 @@ class SimplifiedVerificationAgent:
                 key_areas_text += f"**{area.upper()}:**\n{content[:500]}...\n\n"
         
         return f"""
-你是一个学术演示评估专家。请评估生成的幻灯片是否充分覆盖了论文的核心内容。
+You are an academic presentation evaluation expert. Please evaluate whether the generated slides adequately cover the core content of the paper.
 
-**重要说明：**
-- 这是一个内容覆盖评估，不是细节事实核查
-- 重点关注主要内容是否被包含，而非精确性
-- 采用宽松标准：只要关键概念被提及，就认为被覆盖了
-- 不要过度挑剔措辞或表达方式的差异
+**Important Notes:**
+- This is a content coverage evaluation, not detailed fact-checking
+- Focus on whether main content is included, not precision
+- Use lenient standards: as long as key concepts are mentioned, consider them covered
+- Don't be overly critical of wording or expression differences
 
-**论文核心内容：**
+**Paper Core Content:**
 {key_areas_text}
 
-**生成的演示内容：**
+**Generated Presentation Content:**
 {presentation_coverage}
 
-请评估内容覆盖程度，并以JSON格式返回：
+Please evaluate content coverage and return in JSON format:
 
 ```json
 {{

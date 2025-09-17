@@ -63,10 +63,10 @@ class PresentationPlanner:
             language=language
         )
         
-        # 设置日志
+        # Setup logging
         self.logger = logging.getLogger(__name__)
         
-        # 保持兼容性的属性
+        # Compatibility attributes
         self.raw_content_path = raw_content_path
         self.output_dir = output_dir
         self.model_name = model_name
@@ -74,7 +74,7 @@ class PresentationPlanner:
         self.api_key = api_key
         self.language = language
         
-        # 演示计划数据
+        # Presentation plan data
         self.presentation_plan = {}
         self.paper_info = {}
         self.key_content = {}
@@ -83,54 +83,54 @@ class PresentationPlanner:
     
     def generate_presentation_plan(self) -> Dict[str, Any]:
         """
-        生成演示计划
+        Generate presentation plan
         
         Returns:
-            Dict: 演示计划
+            Dict: Presentation plan
         """
-        self.logger.info("使用轻量级规划器生成演示计划...")
+        self.logger.info("Using lightweight planner to generate presentation plan...")
         
-        # 调用轻量级规划器
+        # Call lightweight planner
         self.presentation_plan = self.lightweight_planner.generate_presentation_plan()
         
         if self.presentation_plan:
-            # 更新兼容性属性
+            # Update compatibility attributes
             self.paper_info = self.presentation_plan.get("paper_info", {})
             self.key_content = self.presentation_plan.get("key_content", {})
             self.slides_plan = self.presentation_plan.get("slides_plan", [])
             
-            self.logger.info("演示计划生成完成")
+            self.logger.info("Presentation plan generation completed")
         else:
-            self.logger.error("演示计划生成失败")
+            self.logger.error("Presentation plan generation failed")
         
         return self.presentation_plan
     
     def save_presentation_plan(self, presentation_plan, output_file=None):
         """
-        保存演示计划到JSON文件
+        Save presentation plan to JSON file
         
         Args:
-            presentation_plan: 演示计划
-            output_file: 输出文件路径，如果为None则使用默认路径
+            presentation_plan: Presentation plan
+            output_file: Output file path, if None use default path
             
         Returns:
-            str: 保存的文件路径
+            str: Saved file path
         """
         return self.lightweight_planner.save_presentation_plan(presentation_plan, output_file)
     
     def interactive_refinement(self, initial_feedback=None) -> Dict[str, Any]:
         """
-        与用户进行多轮交互，优化演示计划
+        Multi-turn interaction with user to optimize presentation plan
         
         Args:
-            initial_feedback: 用户的初始反馈
+            initial_feedback: User's initial feedback
             
         Returns:
-            Dict: 优化后的演示计划
+            Dict: Optimized presentation plan
         """
         result = self.lightweight_planner.interactive_refinement(initial_feedback)
         
-        # 更新本地属性
+        # Update local attributes
         if result:
             self.presentation_plan = result
             self.paper_info = result.get("paper_info", {})
@@ -141,17 +141,17 @@ class PresentationPlanner:
     
     def continue_conversation(self, user_message: str) -> Tuple[str, Dict[str, Any]]:
         """
-        继续与用户的对话，更新演示计划
+        Continue conversation with user, update presentation plan
         
         Args:
-            user_message: 用户的消息
+            user_message: User's message
             
         Returns:
-            Tuple: (模型响应, 更新后的演示计划)
+            Tuple: (Model response, Updated presentation plan)
         """
         response, updated_plan = self.lightweight_planner.continue_conversation(user_message)
         
-        # 更新本地属性
+        # Update local attributes
         if updated_plan:
             self.presentation_plan = updated_plan
             self.paper_info = updated_plan.get("paper_info", {})
@@ -162,29 +162,29 @@ class PresentationPlanner:
     
     def get_conversation_history(self) -> List[Dict[str, str]]:
         """
-        获取对话历史
+        Get conversation history
         
         Returns:
-            List: 对话历史记录
+            List: Conversation history records
         """
         return self.lightweight_planner.get_conversation_history()
 
 def generate_presentation_plan(raw_content_path, output_dir="output", model_name="gpt-4o", api_key=None, language="zh", user_feedback=None):
     """
-    从轻量级内容生成演示计划（便捷函数）
+    Generate presentation plan from lightweight content (convenience function)
     
     Args:
-        raw_content_path: 轻量级内容JSON文件路径
-        output_dir: 输出目录
-        model_name: 要使用的语言模型名称
-        api_key: OpenAI API密钥
-        language: 输出语言，zh为中文，en为英文
-        user_feedback: 用户的初始反馈（可选）
+        raw_content_path: Lightweight content JSON file path
+        output_dir: Output directory
+        model_name: Language model name to use
+        api_key: OpenAI API key
+        language: Output language, zh for Chinese, en for English
+        user_feedback: User's initial feedback (optional)
         
     Returns:
-        tuple: (演示计划, 保存的文件路径, 规划器实例)
+        tuple: (Presentation plan, Saved file path, Planner instance)
     """
-    # 直接调用轻量级规划器的便捷函数
+    # Direct call to lightweight planner convenience function
     presentation_plan, plan_path, lightweight_planner = generate_lightweight_presentation_plan(
         lightweight_content_path=raw_content_path,
         output_dir=output_dir,
@@ -194,7 +194,7 @@ def generate_presentation_plan(raw_content_path, output_dir="output", model_name
         user_feedback=user_feedback
     )
     
-    # 创建包装器实例以保持兼容性
+    # Create wrapper instance for compatibility
     if lightweight_planner:
         wrapper = PresentationPlanner(
             raw_content_path=raw_content_path,

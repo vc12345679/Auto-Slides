@@ -164,14 +164,14 @@ def parse_args():
 
 def interactive_dialog(planner, logger):
     """
-    与用户进行交互式对话，优化演示计划
+    Interactive dialog with user to optimize presentation plan
     
     Args:
-        planner: 演示计划生成器实例
-        logger: 日志记录器
+        planner: Presentation plan generator instance
+        logger: Logger instance
         
     Returns:
-        Dict: 优化后的演示计划
+        Dict: Optimized presentation plan
     """
     logger.info("Entering interactive mode. Enter feedback to improve plan. Type 'exit' to quit.")
     
@@ -179,7 +179,7 @@ def interactive_dialog(planner, logger):
         user_input = input("\nEnter your feedback: ")
         
         # Check for exit
-        if user_input.lower() in ['退出', 'exit', 'quit']:
+        if user_input.lower() in ['exit', 'quit']:
             logger.info("Exiting interactive mode")
             break
             
@@ -195,26 +195,26 @@ def interactive_dialog(planner, logger):
     return planner.presentation_plan
 
 def main():
-    """主函数"""
-    # 解析命令行参数
+    """Main function"""
+    # Parse command line arguments
     args = parse_args()
     
-    # 设置日志
+    # Setup logging
     logger = setup_logging(args.verbose)
     
-    # 检查API密钥
+    # Check API key
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        logger.error("未设置OPENAI_API_KEY环境变量")
+        logger.error("OPENAI_API_KEY environment variable not set")
         return 1
     
-    # 创建输出目录
+    # Create output directory
     output_dir = args.output_dir
     
-    # 使用唯一的会话ID来区分不同的运行
+    # Use unique session ID to distinguish different runs
     session_id = f"{int(time.time())}"
     
-    # 创建各阶段输出目录
+    # Create output directories for each stage
     raw_dir = os.path.join(output_dir, "raw", session_id)
     plan_dir = os.path.join(output_dir, "plan", session_id)
     tex_dir = os.path.join(output_dir, "tex", session_id)
@@ -223,31 +223,31 @@ def main():
     for dir_path in [raw_dir, plan_dir, tex_dir, img_dir]:
         os.makedirs(dir_path, exist_ok=True)
     
-    # 创建工作流状态管理器
+    # Create workflow state manager
     workflow_state = WorkflowState(
         session_id=session_id,
         original_pdf_path=args.pdf_path,
         output_base_dir=output_dir
     )
     
-    # 检查是否为修订模式
+    # Check if in revision mode
     if args.revise:
-        # 验证修订模式的必要参数
+        # Validate required parameters for revision mode
         if not args.original_plan or not args.previous_tex or not args.feedback:
-            logger.error("修订模式需要提供--original-plan, --previous-tex和--feedback参数")
+            logger.error("Revision mode requires --original-plan, --previous-tex and --feedback parameters")
             return 1
             
-        # 检查文件是否存在
+        # Check if files exist
         if not os.path.exists(args.original_plan):
-            logger.error(f"原始演示计划文件不存在: {args.original_plan}")
+            logger.error(f"Original presentation plan file does not exist: {args.original_plan}")
             return 1
             
         if not os.path.exists(args.previous_tex):
-            logger.error(f"先前版本的TEX文件不存在: {args.previous_tex}")
+            logger.error(f"Previous version TEX file does not exist: {args.previous_tex}")
             return 1
             
-        # 运行修订版TEX工作流
-        logger.info("启动修订模式...")
+        # Run revision TEX workflow
+        logger.info("Starting revision mode...")
         
         success, message, pdf_path = run_revision_tex_workflow(
             original_plan_path=args.original_plan,
@@ -261,30 +261,30 @@ def main():
         )
         
         if success:
-            logger.info(f"修订版TEX生成和编译成功: {message}")
-            logger.info(f"生成的PDF文件: {pdf_path}")
+            logger.info(f"Revision TEX generation and compilation successful: {message}")
+            logger.info(f"Generated PDF file: {pdf_path}")
             return 0
         else:
-            logger.error(f"修订版TEX生成和编译失败: {message}")
+            logger.error(f"Revision TEX generation and compilation failed: {message}")
             return 1
     
-    # 非修订模式的原有逻辑
-    # 检查输入文件
+    # Original logic for non-revision mode
+    # Check input file
     if not os.path.exists(args.pdf_path):
-        logger.error(f"PDF文件不存在: {args.pdf_path}")
+        logger.error(f"PDF file does not exist: {args.pdf_path}")
         return 1
         
-    # 步骤1: 提取PDF内容
-    logger.info("步骤1: 提取PDF内容...")
+    # Step 1: Extract PDF content
+    logger.info("Step 1: Extracting PDF content...")
     try:
-        # 决定是否启用LLM增强
+        # Decide whether to enable LLM enhancement
         enable_llm_enhancement = not args.disable_llm_enhancement and bool(api_key)
         
         if not enable_llm_enhancement:
             if args.disable_llm_enhancement:
-                logger.info("用户禁用了LLM增强功能")
+                logger.info("User disabled LLM enhancement feature")
             else:
-                logger.warning("未设置API密钥，将禁用LLM增强功能")
+                logger.warning("API key not set, LLM enhancement will be disabled")
         
         pdf_content, raw_content_path = extract_pdf_content(
             pdf_path=args.pdf_path, 
@@ -294,29 +294,29 @@ def main():
             api_key=api_key
         )
         if not pdf_content:
-            logger.error("PDF内容提取失败")
+            logger.error("PDF content extraction failed")
             return 1
             
-        logger.info(f"PDF内容已保存到: {raw_content_path}")
+        logger.info(f"PDF content saved to: {raw_content_path}")
         
-        # 更新工作流状态
+        # Update workflow state
         workflow_state.set_parser_output(raw_content_path)
         workflow_state.images_dir = img_dir
         
-        # 检查是否成功使用了LLM增强
+        # Check if LLM enhancement was successfully used
         if pdf_content.get("enhanced_content"):
-            logger.info("✅ LLM增强内容提取成功")
+            logger.info("✅ LLM enhanced content extraction successful")
             enhanced = pdf_content["enhanced_content"]
-            logger.info(f"提取到 {len(enhanced.get('tables', []))} 个表格")
-            logger.info(f"提取到 {len(enhanced.get('presentation_sections', {}))} 个演讲章节")
+            logger.info(f"Extracted {len(enhanced.get('tables', []))} tables")
+            logger.info(f"Extracted {len(enhanced.get('presentation_sections', {}))} presentation sections")
         else:
-            logger.info("使用基础PDF解析（未启用LLM增强）")
+            logger.info("Using basic PDF parsing (LLM enhancement not enabled)")
     except Exception as e:
-        logger.error(f"PDF内容提取失败: {str(e)}")
+        logger.error(f"PDF content extraction failed: {str(e)}")
         return 1
             
-    # 步骤2: 生成演示计划
-    logger.info("步骤2: 生成演示计划...")
+    # Step 2: Generate presentation plan
+    logger.info("Step 2: Generating presentation plan...")
     try:
         presentation_plan, plan_path, planner = generate_presentation_plan(
             raw_content_path=raw_content_path,
@@ -326,30 +326,30 @@ def main():
         )
             
         if not presentation_plan:
-            logger.error("演示计划生成失败")
+            logger.error("Presentation plan generation failed")
             return 1
             
-        logger.info(f"演示计划已保存到: {plan_path}")
+        logger.info(f"Presentation plan saved to: {plan_path}")
         
-        # 更新工作流状态
+        # Update workflow state
         workflow_state.set_planner_output(plan_path)
             
-        # 如果启用了交互式模式，进入对话
+        # If interactive mode is enabled, enter dialog
         if args.interactive and planner:
-            logger.info("开始交互式优化...")
+            logger.info("Starting interactive optimization...")
             presentation_plan = interactive_dialog(planner, logger)
             
-            # 保存优化后的计划
+            # Save optimized plan
             plan_path = planner.save_presentation_plan(presentation_plan)
-            logger.info(f"优化后的演示计划已保存到: {plan_path}")
+            logger.info(f"Optimized presentation plan saved to: {plan_path}")
             
-            # 更新工作流状态
+            # Update workflow state
             workflow_state.set_planner_output(plan_path)
     except Exception as e:
-        logger.error(f"演示计划生成失败: {str(e)}")
+        logger.error(f"Presentation plan generation failed: {str(e)}")
         return 1
     
-    # 步骤2.5: 验证演示计划（使用简化验证Agent）
+    # Step 2.5: Verify presentation plan (using simplified verification agent)
     verification_passed = True
     verification_report = None
     verification_report_path = None
@@ -358,11 +358,11 @@ def main():
         os.makedirs(verification_dir, exist_ok=True)
         
         try:
-            # 导入简化验证Agent
+            # Import simplified verification agent
             from modules.simplified_verification_agent import verify_content_coverage
             
-            logger.info("步骤2.5: 验证内容覆盖度...")
-            logger.info("正在检查核心内容是否充分覆盖...")
+            logger.info("Step 2.5: Verifying content coverage...")
+            logger.info("Checking if core content is adequately covered...")
             
             verification_passed, verification_report, verification_report_path = verify_content_coverage(
                 original_content_path=raw_content_path,
@@ -372,50 +372,50 @@ def main():
                 language=args.language
             )
             
-            # 更新工作流状态
+            # Update workflow state
             workflow_state.set_verification_output(verification_report_path, verification_passed)
             
             if verification_passed:
-                logger.info("✅ 内容覆盖度验证通过")
+                logger.info("✅ Content coverage verification passed")
                 if verification_report_path:
-                    logger.info(f"验证报告已保存到: {verification_report_path}")
+                    logger.info(f"Verification report saved to: {verification_report_path}")
             else:
-                logger.warning("⚠️ 内容覆盖度不足，建议进行修复")
+                logger.warning("⚠️ Insufficient content coverage, repair recommended")
                 if verification_report_path:
-                    logger.warning(f"验证报告已保存到: {verification_report_path}")
+                    logger.warning(f"Verification report saved to: {verification_report_path}")
                 
-                # 显示缺失内容摘要
+                # Display missing content summary
                 if verification_report and "missing_content" in verification_report:
                     missing_content = verification_report["missing_content"]
                     if missing_content:
-                        logger.warning("缺失的重要内容:")
-                        for item in missing_content[:3]:  # 只显示前3个
+                        logger.warning("Missing important content:")
+                        for item in missing_content[:3]:  # Only show first 3
                             logger.warning(f"  - {item.get('area', 'Unknown')}: {item.get('missing_content', '')[:100]}...")
                 
-                # 对于内容覆盖不足，询问用户是否继续
+                # For insufficient content coverage, ask user whether to continue
                 if verification_report and verification_report.get("missing_content"):
-                    user_choice = input("\n发现内容覆盖不足，是否启用自动修复？(y/n): ").strip().lower()
+                    user_choice = input("\nInsufficient content coverage detected. Enable auto-repair? (y/n): ").strip().lower()
                     if user_choice != 'y':
-                        logger.info("用户选择跳过修复，继续生成")
-                        verification_passed = True  # 允许继续
+                        logger.info("User chose to skip repair, continuing generation")
+                        verification_passed = True  # Allow continuation
             
         except Exception as e:
-            logger.warning(f"验证步骤失败，继续执行: {str(e)}")
-            # 验证失败不影响主流程继续执行
-            verification_passed = True  # 设为True以避免阻塞流程
+            logger.warning(f"Verification step failed, continuing execution: {str(e)}")
+            # Verification failure does not affect main process continuation
+            verification_passed = True  # Set to True to avoid blocking process
     
-    # 步骤2.6: 自动修复（使用简化修复Agent）
-    repaired_plan_path = plan_path  # 默认使用原始计划
+    # Step 2.6: Auto-repair (using simplified repair agent)
+    repaired_plan_path = plan_path  # Default to original plan
     if args.enable_auto_repair and not args.disable_verification and args.enable_verification and verification_report and not verification_passed:
         repair_dir = os.path.join(output_dir, "repair", session_id)
         os.makedirs(repair_dir, exist_ok=True)
         
         try:
-            # 导入简化修复Agent
+            # Import simplified repair agent
             from modules.simplified_repair_agent import repair_content_coverage
             
-            logger.info("步骤2.6: 补充缺失内容...")
-            logger.info("正在基于验证结果补充重要内容...")
+            logger.info("Step 2.6: Supplementing missing content...")
+            logger.info("Supplementing important content based on verification results...")
             
             repair_success, repair_report, repaired_plan_path = repair_content_coverage(
                 presentation_plan_path=plan_path,
@@ -427,32 +427,32 @@ def main():
             )
             
             if repair_success:
-                logger.info("✅ 内容补充完成")
-                logger.info(f"补充后的计划已保存到: {repaired_plan_path}")
+                logger.info("✅ Content supplementation completed")
+                logger.info(f"Supplemented plan saved to: {repaired_plan_path}")
                 
-                # 显示修复摘要
+                # Display repair summary
                 if repair_report and "repair_summary" in repair_report:
                     summary = repair_report["repair_summary"]
                     total_repairs = summary.get('total_repairs', 0)
-                    logger.info(f"补充内容数量: {total_repairs}")
+                    logger.info(f"Number of supplemented content: {total_repairs}")
                     if total_repairs > 0:
-                        logger.info("内容覆盖度已得到改善")
+                        logger.info("Content coverage has been improved")
                 
-                # 更新工作流状态使用修复后的计划
+                # Update workflow state to use repaired plan
                 workflow_state.set_planner_output(repaired_plan_path)
-                plan_path = repaired_plan_path  # 更新变量用于后续TEX生成
+                plan_path = repaired_plan_path  # Update variable for subsequent TEX generation
             else:
-                logger.info("⚠️ 未找到需要补充的内容，或补充失败")
-                logger.info("将继续使用原始演示计划")
+                logger.info("⚠️ No content requiring supplementation found, or supplementation failed")
+                logger.info("Will continue using original presentation plan")
             
         except Exception as e:
-            logger.warning(f"自动修复步骤失败，继续执行: {str(e)}")
-            # 修复失败不影响主流程继续执行
+            logger.warning(f"Auto-repair step failed, continuing execution: {str(e)}")
+            # Repair failure does not affect main process continuation
         
-    # 步骤3: 并行生成TEX和演讲稿
-    logger.info("步骤3: 生成和编译TEX...")
+    # Step 3: Generate TEX and speech script in parallel
+    logger.info("Step 3: Generating and compiling TEX...")
     
-    # 3.1: TEX生成和编译
+    # 3.1: TEX generation and compilation
     try:
         success, message, pdf_path = run_tex_workflow(
             presentation_plan_path=plan_path,
@@ -461,28 +461,28 @@ def main():
             language=args.language,
             theme=args.theme,
             max_retries=args.max_retries,
-            skip_compilation=args.skip_compilation  # 只跳过编译，不跳过TEX生成
+            skip_compilation=args.skip_compilation  # Only skip compilation, not TEX generation
         )
         
         if success:
-            logger.info(f"TEX生成和编译成功: {message}")
-            logger.info(f"生成的PDF文件: {pdf_path}")
+            logger.info(f"TEX generation and compilation successful: {message}")
+            logger.info(f"Generated PDF file: {pdf_path}")
             
-            # 更新工作流状态
+            # Update workflow state
             tex_files = [f for f in os.listdir(tex_dir) if f.endswith(".tex") and not f.endswith("_revised.tex")]
             if tex_files:
                 tex_file_path = os.path.join(tex_dir, tex_files[0])
                 workflow_state.set_tex_output(tex_file_path, pdf_path)
         
-        # 3.2: 演讲稿生成（可选，与TEX生成并行）
+        # 3.2: Speech script generation (optional, parallel with TEX generation)
         speech_success = False
         speech_path = None
         if args.enable_speech:
             try:
-                # 导入演讲稿生成Agent
+                # Import speech script generation agent
                 from modules.speech_generator import generate_speech_for_presentation
                 
-                logger.info("步骤3.2: 生成演讲稿...")
+                logger.info("Step 3.2: Generating speech script...")
                 
                 speech_dir = os.path.join(output_dir, "speech", session_id)
                 os.makedirs(speech_dir, exist_ok=True)
@@ -498,39 +498,39 @@ def main():
                 )
                 
                 if speech_success:
-                    logger.info("✅ 演讲稿生成成功")
-                    logger.info(f"演讲稿已保存到: {speech_path}")
+                    logger.info("✅ Speech script generation successful")
+                    logger.info(f"Speech script saved to: {speech_path}")
                     
                     if speech_result and "speech_summary" in speech_result:
                         summary = speech_result["speech_summary"]
-                        logger.info(f"演讲时长: {summary.get('estimated_duration', 'N/A')}分钟")
-                        logger.info(f"幻灯片数量: {summary.get('total_slides', 'N/A')}张")
-                        logger.info(f"演讲风格: {summary.get('presentation_style', 'N/A')}")
+                        logger.info(f"Speech duration: {summary.get('estimated_duration', 'N/A')} minutes")
+                        logger.info(f"Number of slides: {summary.get('total_slides', 'N/A')}")
+                        logger.info(f"Presentation style: {summary.get('presentation_style', 'N/A')}")
                     
-                    # 更新工作流状态
+                    # Update workflow state
                     workflow_state.set_speech_output(speech_path, speech_success)
                 else:
-                    logger.warning("⚠️ 演讲稿生成失败")
+                    logger.warning("⚠️ Speech script generation failed")
                     
             except Exception as e:
-                logger.warning(f"演讲稿生成步骤失败: {str(e)}")
-                # 演讲稿生成失败不影响主流程
+                logger.warning(f"Speech script generation step failed: {str(e)}")
+                # Speech script generation failure does not affect main process
                 
         if success:
             
-            # 默认启用交互式修订模式，除非用户明确禁用
+            # Enable interactive revision mode by default, unless user explicitly disables it
             if not args.no_interactive_revise:
-                logger.info("\n=== 启动交互式修订模式 ===")
-                logger.info("PDF已生成，现在您可以通过自然语言对话来修改幻灯片内容。")
+                logger.info("\n=== Starting Interactive Revision Mode ===")
+                logger.info("PDF has been generated. You can now modify slide content through natural language dialogue.")
                 
-                # 导入并启动新版本 ReAct 模式交互式编辑器
+                # Import and start new version ReAct mode interactive editor
                 from modules.react_interactive_editor_new import ReactInteractiveEditor
                 
                 if workflow_state.tex_output_path:
-                    logger.info(f"将编辑文件: {workflow_state.tex_output_path}")
+                    logger.info(f"Will edit file: {workflow_state.tex_output_path}")
                     
-                    # 启动新版本交互式编辑器，传入原始PDF内容和工作流状态
-                    # 从PDF内容中提取原始文本
+                    # Start new version interactive editor, passing original PDF content and workflow state
+                    # Extract original text from PDF content
                     source_text = None
                     if isinstance(pdf_content, dict) and 'full_text' in pdf_content:
                         source_text = pdf_content['full_text']
@@ -544,37 +544,37 @@ def main():
                     )
                     editor.interactive_session()
                 else:
-                    logger.error("未找到生成的TEX文件，无法启动交互式修订模式")
+                    logger.error("Generated TEX file not found, cannot start interactive revision mode")
             
-            # 输出修订模式的用法提示（如果禁用了交互式修订）
+            # Output revision mode usage hints (if interactive revision is disabled)
             if args.no_interactive_revise:
                 previous_tex_path = os.path.join(tex_dir, 'output.tex')
                 if not os.path.exists(previous_tex_path):
-                    # 尝试查找其他tex文件
+                    # Try to find other tex files
                     tex_files = [f for f in os.listdir(tex_dir) if f.endswith(".tex")]
                     if tex_files:
                         previous_tex_path = os.path.join(tex_dir, tex_files[0])
 
-                logger.info("\n=== 修订选项 ===")
-                logger.info("1. 命令行修订模式：")
-                logger.info(f"   python main.py --revise --original-plan='{plan_path}' --previous-tex='{previous_tex_path}' --feedback=\"您的修改建议\" --output-dir='{output_dir}' --theme={args.theme}")
-                logger.info("2. 交互式修订模式（重新运行时启用）：")
+                logger.info("\n=== Revision Options ===")
+                logger.info("1. Command line revision mode:")
+                logger.info(f"   python main.py --revise --original-plan='{plan_path}' --previous-tex='{previous_tex_path}' --feedback=\"Your modification suggestions\" --output-dir='{output_dir}' --theme={args.theme}")
+                logger.info("2. Interactive revision mode (enable when re-running):")
                 logger.info(f"   python main.py '{args.pdf_path}' --output-dir='{output_dir}' --theme={args.theme}")
             else:
-                logger.info("\n💡 提示：如果您不需要交互式修订，可以使用 --no-interactive-revise 参数跳过。")
+                logger.info("\n💡 Tip: If you don't need interactive revision, you can use the --no-interactive-revise parameter to skip it.")
             
-            # 输出新功能提示
-            print("\n🔧 新功能提示:")
-            print("- ✅ 已启用智能图片匹配算法，图片分配更准确")
-            print("- ✅ 已启用图表分离规则，避免单页过载") 
-            print("- ✅ 已强化Background章节要求，演示结构更完整")
+            # Output new feature hints
+            print("\n🔧 New Feature Hints:")
+            print("- ✅ Smart image matching algorithm enabled, more accurate image allocation")
+            print("- ✅ Chart separation rules enabled, avoiding single page overload") 
+            print("- ✅ Background section requirements strengthened, more complete presentation structure")
             
             return 0
         else:
-            logger.error(f"TEX生成和编译失败: {message}")
+            logger.error(f"TEX generation and compilation failed: {message}")
             return 1
     except Exception as e:
-        logger.error(f"TEX工作流执行失败: {str(e)}")
+        logger.error(f"TEX workflow execution failed: {str(e)}")
         return 1
 
 if __name__ == "__main__":

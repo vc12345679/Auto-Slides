@@ -270,33 +270,33 @@ class SimplifiedRepairAgent:
         """Create prompt for generating supplementary content"""
         
         return f"""
-你是一个学术演示内容生成专家。请根据原论文内容生成缺失的幻灯片要点。
+You are an academic presentation content generation expert. Please generate missing slide points based on the original paper content.
 
-**缺失内容领域：** {area}
-**缺失内容描述：** {missing_desc}
+**Missing Content Area:** {area}
+**Missing Content Description:** {missing_desc}
 
-**原论文相关内容：**
-{original_content[:2000] if original_content else "无相关原文内容"}
+**Original Paper Related Content:**
+{original_content[:2000] if original_content else "No relevant original content"}
 
-**任务要求：**
-1. 生成2-4个简洁的幻灯片要点
-2. 每个要点应该是一个完整的句子或短语
-3. 内容应该基于原论文，不要添加不存在的信息
-4. 使用学术演示的专业语言
-5. 如果原文内容不足，生成通用但合理的要点
+**Task Requirements:**
+1. Generate 2-4 concise slide points
+2. Each point should be a complete sentence or phrase
+3. Content should be based on the original paper, don't add non-existent information
+4. Use professional academic presentation language
+5. If original content is insufficient, generate general but reasonable points
 
-**输出格式：**
-请直接返回要点列表，每行一个要点，不需要编号：
+**Output Format:**
+Please return the points list directly, one point per line, no numbering required:
 
-要点1
-要点2  
-要点3
-要点4（如果需要）
+Point 1
+Point 2  
+Point 3
+Point 4 (if needed)
 
-**示例输出：**
-提出了一个新的深度学习框架来解决现有方法的局限性
-该方法在多个基准数据集上取得了显著的性能提升
-实验验证了所提方法的有效性和泛化能力
+**Example Output:**
+Proposed a new deep learning framework to address limitations of existing methods
+The method achieved significant performance improvements on multiple benchmark datasets
+Experiments validated the effectiveness and generalization ability of the proposed method
 """
     
     def _parse_content_response(self, response_content: str) -> List[str]:

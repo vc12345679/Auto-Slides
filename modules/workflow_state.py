@@ -1,6 +1,6 @@
 """
-工作流状态管理器
-管理论文到Beamer转换过程中的所有中间产物，确保Agent间数据共享
+Workflow state manager
+Manages all intermediate products in the paper-to-Beamer conversion process, ensuring data sharing between agents
 """
 
 import os
@@ -12,14 +12,14 @@ from dataclasses import dataclass, asdict
 
 @dataclass
 class WorkflowState:
-    """工作流状态数据类，管理所有中间产物路径和元数据"""
+    """Workflow state data class, manages all intermediate product paths and metadata"""
     
-    # 基础信息
+    # Basic information
     session_id: str
     original_pdf_path: str
     output_base_dir: str
     
-    # 各阶段输出路径
+    # Output paths for each stage
     parser_output_path: Optional[str] = None
     planner_output_path: Optional[str] = None
     tex_output_path: Optional[str] = None
@@ -27,19 +27,19 @@ class WorkflowState:
     verification_report_path: Optional[str] = None
     speech_output_path: Optional[str] = None
     
-    # 目录路径
+    # Directory paths
     raw_dir: Optional[str] = None
     plan_dir: Optional[str] = None
     tex_dir: Optional[str] = None
     images_dir: Optional[str] = None
     verification_dir: Optional[str] = None
     
-    # 工作流元数据
+    # Workflow metadata
     language: str = "zh"
     model_name: str = "gpt-4o"
     theme: str = "Madrid"
     
-    # 状态标记
+    # Status flags
     parser_completed: bool = False
     planner_completed: bool = False
     verification_completed: bool = False
@@ -47,7 +47,7 @@ class WorkflowState:
     speech_completed: bool = False
     
     def __post_init__(self):
-        """初始化后设置目录结构"""
+        """Set up directory structure after initialization"""
         if not self.raw_dir:
             self.raw_dir = os.path.join(self.output_base_dir, "raw", self.session_id)
         if not self.plan_dir:
